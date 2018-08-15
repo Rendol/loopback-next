@@ -35,6 +35,7 @@ import {
 import {RestBindings} from './keys';
 import {RequestContext} from './request-context';
 import * as express from 'express';
+import {ServeStaticOptions} from 'serve-static';
 
 const debug = require('debug')('loopback:rest:server');
 
@@ -131,6 +132,7 @@ export class RestServer extends Context implements Server, HttpServerLike {
   protected _httpServer: HttpServer | undefined;
 
   protected _expressApp: express.Application;
+  protected _routerForStaticAssets: express.Router;
 
   get listening(): boolean {
     return this._httpServer ? this._httpServer.listening : false;
@@ -196,6 +198,21 @@ export class RestServer extends Context implements Server, HttpServerLike {
     };
     this._expressApp.use(cors(corsOptions));
 
+    // Place the assets router here before controllers
+    this._setupRouterForStaticAssets();
+
+    // Mount static assets
+    if (options.assets) {
+      for (const p in options.assets) {
+        const asset = options.assets[p];
+        debug('Mounting static assets to %s: %j', p, asset);
+        this._routerForStaticAssets.use(
+          p,
+          express.static(asset.root, asset.options),
+        );
+      }
+    }
+
     // Mount our router & request handler
     this._expressApp.use((req, res, next) => {
       this._handleHttpRequest(req, res, options!).catch(next);
@@ -207,6 +224,17 @@ export class RestServer extends Context implements Server, HttpServerLike {
         this._onUnhandledError(req, res, err);
       },
     );
+  }
+
+  /**
+   * Set up an express router for all static assets so that middleware for
+   * all directories are invoked at the same phase
+   */
+  protected _setupRouterForStaticAssets() {
+    if (!this._routerForStaticAssets) {
+      this._routerForStaticAssets = express.Router();
+      this._expressApp.use(this._routerForStaticAssets);
+    }
   }
 
   protected _handleHttpRequest(
@@ -514,6 +542,16 @@ export class RestServer extends Context implements Server, HttpServerLike {
   }
 
   /**
+   * Mount static assets to the REST server
+   * @param path The path to serve the asset
+   * @param root The root directory
+   * @param options Options for serve-static
+   */
+  static(path: string, root: string, options?: ServeStaticOptions) {
+    this._routerForStaticAssets.use(path, express.static(root, options));
+  }
+
+  /**
    * Set the OpenAPI specification that defines the REST API schema for this
    * server. All routes, parameter definitions and return types will be defined
    * in this way.
@@ -670,6 +708,15 @@ export interface RestServerOptions {
   cors?: cors.CorsOptions;
   apiExplorerUrl?: string;
   sequence?: Constructor<SequenceHandler>;
+  /**
+   * Static assets to be served using `express.static()`
+   */
+  assets?: {
+    [path: string]: {
+      root: string;
+      options?: ServeStaticOptions;
+    };
+  };
 }
 
 /**

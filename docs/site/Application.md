@@ -206,6 +206,42 @@ This means you can call these `RestServer` functions to do all of your
 server-level setups in the app constructor without having to explicitly retrieve
 an instance of your server.
 
+### Serve static files
+
+The `RestServer` allows static files to be served. It can be done by configuring
+the RestApplication with `assets`:
+
+```ts
+export class MyApplication extends RestApplication {
+  constructor() {
+    super({
+      rest: {
+        port: 4000,
+        host: 'my-host',
+        assets: {
+          '/html': {
+            root: rootDirForHtml, // Root directory for static files
+            options: {}, // Options for serve-static
+          },
+        },
+      },
+    });
+  }
+}
+```
+
+You can also use `static()` to mount static files by code.
+
+```ts
+app.static('/html', rootDirForHtml);
+```
+
+Please note
+[serve-static](https://expressjs.com/en/resources/middleware/serve-static.html)
+is used behind the scene to serve static files. Please see
+https://expressjs.com/en/starter/static-files.html and
+https://expressjs.com/en/4x/api.html#express.static for details.
+
 ### Use unique bindings
 
 Use binding names that are prefixed with a unique string that does not overlap

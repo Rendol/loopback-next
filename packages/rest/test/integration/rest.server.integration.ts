@@ -77,6 +77,87 @@ describe('RestServer (integration)', () => {
       .expect(500);
   });
 
+  it('allows static assets via config', async () => {
+    const root = path.join(__dirname, 'fixtures');
+    const server = await givenAServer({
+      rest: {
+        port: 0,
+        assets: {
+          '/html': {
+            root: root,
+          },
+        },
+      },
+    });
+
+    const content = fs
+      .readFileSync(path.join(root, 'index.html'))
+      .toString('utf-8');
+    await createClientForHandler(server.requestHandler)
+      .get('/html/index.html')
+      .expect('Content-Type', /text\/html/)
+      .expect(200, content);
+
+    await createClientForHandler(server.requestHandler)
+      .get('/html/does-not-exist.html')
+      .expect(404);
+  });
+
+  it('allows static assets via api', async () => {
+    const root = path.join(__dirname, 'fixtures');
+    const server = await givenAServer({
+      rest: {
+        port: 0,
+      },
+    });
+
+    server.static('/html', root);
+    const content = fs
+      .readFileSync(path.join(root, 'index.html'))
+      .toString('utf-8');
+    await createClientForHandler(server.requestHandler)
+      .get('/html/index.html')
+      .expect('Content-Type', /text\/html/)
+      .expect(200, content);
+  });
+
+  it('allows static assets via api after start', async () => {
+    const root = path.join(__dirname, 'fixtures');
+    const server = await givenAServer({
+      rest: {
+        port: 0,
+      },
+    });
+    await createClientForHandler(server.requestHandler)
+      .get('/html/index.html')
+      .expect(404);
+
+    server.static('/html', root);
+
+    await createClientForHandler(server.requestHandler)
+      .get('/html/index.html')
+      .expect(200);
+  });
+
+  it('allows non-static routes after assets', async () => {
+    const root = path.join(__dirname, 'fixtures');
+    const server = await givenAServer({
+      rest: {
+        port: 0,
+        assets: {
+          '/html': {
+            root: root,
+          },
+        },
+      },
+    });
+    server.handler(dummyRequestHandler);
+
+    await createClientForHandler(server.requestHandler)
+      .get('/html/does-not-exist.html')
+      .expect(200, 'Hello');
+  });
+
   it('allows cors', async () => {
     const server = await givenAServer({rest: {port: 0}});
     server.handler(dummyRequestHandler);

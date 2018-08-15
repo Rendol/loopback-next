@@ -16,6 +16,7 @@ import {
   ControllerFactory,
 } from './router/routing-table';
 import {OperationObject, OpenApiSpec} from '@loopback/openapi-v3-types';
+import {ServeStaticOptions} from 'serve-static';
 
 export const ERR_NO_MULTI_SERVER = format(
   'RestApplication does not support multiple servers!',
@@ -81,6 +82,16 @@ export class RestApplication extends Application implements HttpServerLike {
 
   handler(handlerFn: SequenceFunction) {
     this.restServer.handler(handlerFn);
+  }
+
+  /**
+   * Mount static assets to the REST server
+   * @param path The path to serve the static asset
+   * @param root The root directory
+   * @param options Options for serve-static
+   */
+  static(path: string, root: string, options?: ServeStaticOptions) {
+    this.restServer.static(path, root, options);
   }
 
   /**
