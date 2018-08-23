@@ -52,16 +52,44 @@ Application options.
 const app = new RestApplication({
   rest: {
     port: 3001,
+
+    // Template of the OpenAPI spec, which will be filled with `paths` from
+    // controllers.
+    openApiSpec: {
+      template: {
+        info: {
+          title: 'My Application',
+          version: '1.0.0',
+        },
+        servers: [{url: 'http://127.0.0.1:8080'}],
+      },
+      // Set `servers` based on HTTP request headers, default to `false`
+      setServersFromRequest: false,
+      // Optional mapping for endpoints serving specs
+      endpointMapping: {
+        '/openapi.json': {version: '3.0.0', format: 'json'},
+        '/openapi.yaml': {version: '3.0.0', format: 'yaml'},
+      },
+    },
+
+    // Optional configuration for API explorer
+    apiExplorer: {
+      // URL for the hosted API Explorer UI
+      // default to https://loopback.io/api-explorer
+      url: 'http://petstore.swagger.io',
+    },
   },
 });
 ```
 
 ### `rest` options
 
-| Property | Type            | Purpose                                                                                                   |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------- |
-| port     | number          | Specify the port on which the RestServer will listen for traffic.                                         |
-| sequence | SequenceHandler | Use a custom SequenceHandler to change the behavior of the RestServer for the request-response lifecycle. |
+| Property    | Type               | Purpose                                                                                                   |
+| ----------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| port        | number             | Specify the port on which the RestServer will listen for traffic.                                         |
+| sequence    | SequenceHandler    | Use a custom SequenceHandler to change the behavior of the RestServer for the request-response lifecycle. |
+| openApiSpec | OpenApiSpecOptions | Customize how OpenAPI spec is served                                                                      |
+| apiExplorer | ApiExplorerOptions | Customize how API explorer is served                                                                      |
 
 ## Contributions
 
